@@ -3,13 +3,14 @@ package pubg.radar.struct.cmd
 import pubg.radar.bugln
 import pubg.radar.deserializer.ROLE_MAX
 import pubg.radar.deserializer.channel.ActorChannel
+import pubg.radar.deserializer.channel.ActorChannel.Companion.actors
 import pubg.radar.struct.*
 import pubg.radar.struct.Archetype.*
 import pubg.radar.struct.cmd.CMD.propertyVector100
 import pubg.radar.struct.cmd.CMD.repMovement
 
 object APawnCMD {
-  fun process(actor: Actor, bunch: Bunch, waitingHandle: Int): Boolean {
+  fun process(actor: Actor, bunch: Bunch, waitingHandle: Int, data: HashMap<String, Any?>): Boolean {
     with(bunch) {
       when (waitingHandle) {
         1 -> if (readBit()) {//bHidden
@@ -37,7 +38,6 @@ object APawnCMD {
           repMovement(actor)
           with(actor) {
             when (Type) {
-              DroopedItemGroup -> ActorChannel.droppedItemLocation[netGUID]?.first!!.set(location)
               AirDrop -> ActorChannel.airDropLocation[netGUID] = location
               Other -> {
               }
@@ -48,12 +48,12 @@ object APawnCMD {
         7 -> {
           val (a, obj) = readObject()
           val attachTo = if (a.isValid()) {
-            ActorChannel.actors[a]?.beAttached = true
+            actors[a]?.attachChildren?.put(actor.netGUID, actor.netGUID)
             a
           } else null
-          if (actor.attachTo != null)
-            ActorChannel.actors[actor.attachTo!!]?.beAttached = false
-          actor.attachTo = attachTo
+          if (actor.attachParent != null)
+            actors[actor.attachParent!!]?.attachChildren?.remove(actor.netGUID)
+          actor.attachParent = attachTo
           bugln { ",attachTo [$actor---------> $a ${NetGUIDCache.guidCache.getObjectFromNetGUID(a)} ${ActorChannel.actors[a]}" }
         }
         8 -> {
